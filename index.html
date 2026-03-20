@@ -3,242 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RetroTube Analyzer 98 - Enterprise Edition</title>
-    <link rel="stylesheet" href="https://unpkg.com/98.css">
+    <title>YT Analyzer - Modern Dashboard</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- 구글 폰트 적용 (모던함 강조) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="window master-window" id="mainWindow">
-        
-        <!-- 타이틀 바 -->
-        <div class="title-bar">
-            <div class="title-bar-text">
-                <img src="https://win98icons.alexmeub.com/icons/computer_explorer-5.png" alt="icon"> 
-                Y-Analyzer 98 Master Terminal (최종 벤치마킹 시스템)
+    <div class="app-container">
+        <!-- 좌측 사이드바 (200px 고정 폭) -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <span class="logo-icon">▶</span> YT Analyzer
             </div>
-            <div class="title-bar-controls">
-                <button aria-label="Minimize"></button>
-                <button aria-label="Maximize"></button>
-                <button aria-label="Close"></button>
-            </div>
-        </div>
-
-        <!-- 글로벌 통합 툴바 -->
-        <div class="toolbar">
-            <button id="mobileMenuBtn" style="display: none; margin-right: 5px;">☰ 메뉴</button>
-            <img src="https://win98icons.alexmeub.com/icons/search_web-0.png" alt="search">
-            <span style="font-weight:bold;">Global Omnibar:</span>
-            <input type="text" id="globalSearch" placeholder="어디서든 채널명, 종목(티커), 키워드로 강제 직행..." style="width: 40%; max-width: 500px; margin: 0 10px;">
-            <button id="btnGlobalSearch">분석 즉시 시작</button>
             
-            <div style="flex-grow: 1;"></div>
-            <button><img src="https://win98icons.alexmeub.com/icons/excel-0.png" alt="excel" style="width:16px; margin-right:3px;"> 데이터 CSV 추출</button>
-        </div>
+            <nav class="main-menu">
+                <div class="menu-label">MENU</div>
+                <a href="#" class="menu-item active" data-target="panel-dashboard">트렌드 대시보드</a>
+                <a href="#" class="menu-item" data-target="panel-analyzer">채널 분석기</a>
+                <a href="#" class="menu-item" data-target="panel-topic">주제별 분석 <span class="badge">준비중</span></a>
+                <a href="#" class="menu-item" data-target="panel-keyword">키워드 탐색 <span class="badge">준비중</span></a>
+                <a href="#" class="menu-item" data-target="panel-revenue">수익 예측 매뉴 <span class="badge new">NEW</span></a>
+            </nav>
 
-        <div class="window-body main-frame">
-            
-            <!-- 1. 좌측 트래킹 디렉토리 -->
-            <div class="sidebar sunken-panel">
-                <ul class="tree-view">
-                    <li>
-                        <details open>
-                            <summary><strong>🏠 시스템 홈 (Home)</strong></summary>
-                            <ul>
-                                <li class="nav-item active" data-target="view-home">Command Center (대시보드)</li>
-                                <li class="nav-item" data-target="view-workspace">⭐ My Workspace (추적 패널)</li>
-                            </ul>
-                        </details>
-                    </li>
-                    
-                    <li>
-                        <details open>
-                            <summary><strong>🎯 VIP Tracker (집중 부문)</strong></summary>
-                            <ul>
-                                <li class="nav-item" data-target="view-kr-stock">🇰🇷 한국 주식 (KOSPI 분석)</li>
-                                <li class="nav-item" data-target="view-us-stock">🇺🇸 미국 주식 (NASDAQ 분석)</li>
-                                <li class="nav-item" data-target="view-side-hustle">💼 부업/수익화 (신뢰도 검증)</li>
-                            </ul>
-                        </details>
-                    </li>
-
-                    <li>
-                        <details>
-                            <summary><strong>🚀 Creator Suite (성장/SEO)</strong></summary>
-                            <ul>
-                                <li class="nav-item" data-target="view-ab-test">썸네일 A/B 클릭률 미터기</li>
-                                <li class="nav-item" data-target="view-keyword">키워드 포착 익스플로러</li>
-                            </ul>
-                        </details>
-                    </li>
-                    <li>
-                        <details open>
-                            <summary><strong>📈 벤치마킹 & 광고 수익</strong></summary>
-                            <ul>
-                                <li class="nav-item" data-target="view-broad">10+ 글로벌 종합 랭킹 카테고리</li>
-                                <li class="nav-item" data-target="view-ad">광고 단가(CPV) 예측 머신</li>
-                                <li class="nav-item" data-target="view-bot">🤖 가짜 구독자(Bot) 분별기</li>
-                            </ul>
-                        </details>
-                    </li>
-                    
-                    <li>
-                        <details open>
-                            <summary><strong>🧠 AI 감성 (여론 분석)</strong></summary>
-                            <ul>
-                                <li class="nav-item" data-target="view-sentiment">💬 댓글 여론 감성 온도계</li>
-                                <li class="nav-item" data-target="view-dropoff">시청자 최대 이탈 구간 뷰어</li>
-                            </ul>
-                        </details>
-                    </li>
+            <div class="favorites-section">
+                <div class="menu-label">⭐ 즐겨찾기 채널 (최대 10개)</div>
+                <ul id="favorites-list" class="favorites-list">
+                    <!-- JS 연동: 동적으로 이곳에 <li> 추가됨 -->
                 </ul>
+                <p id="empty-fav-msg" class="empty-msg">등록된 채널이 없습니다.</p>
             </div>
 
-            <!-- 2. 우측 데이터 표시 창 -->
-            <div class="viewport sunken-panel" id="mainViewport">
+            <div class="settings-menu">
+                <a href="#" class="menu-item disabled">⚙ 환경 설정</a>
+            </div>
+        </aside>
+
+        <!-- 모바일 사이드바 배경 오버레이 (Drawer 모드용) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- 우측 메인 영역 -->
+        <main class="main-content">
+            <!-- 상단 탑바 (Top Bar) -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="mobile-toggle" id="mobileToggle">☰</button>
+                    <h2 id="current-panel-title">트렌드 대시보드</h2>
+                </div>
                 
-                <!-- 화면 1: Command Center (홈 화면) -->
-                <div class="view-panel active" id="view-home">
-                    <h3>🏠 시스템 관제소 (Command Center)</h3>
-                    <p>전체 유튜브 벤치마킹 흐름과 이상 징후를 한 판에 모니터링합니다.</p>
-                    <div style="display:flex; gap:15px; margin-top:15px;">
-                        <fieldset style="flex:1;">
-                            <legend>🔥 K-주식 / US-주식 급상승 유튜버</legend>
-                            <ul class="tree-view">
-                                <li><strong>1위:</strong> 삼프로TV (+12,020명)</li>
-                                <li><strong>2위:</strong> 슈카월드 (+8,400명)</li>
-                                <li><strong>3위:</strong> 미주은 (+3,100명)</li>
+                <div class="topbar-controls" id="topbar-filters">
+                    <div class="filter-chips">
+                        <button class="chip active">전체</button>
+                        <button class="chip">엔터테인먼트</button>
+                        <button class="chip">테크</button>
+                        <button class="chip">교육</button>
+                        <button class="chip">라이프스타일</button>
+                    </div>
+                    <select class="date-dropdown">
+                        <option>최근 7일</option>
+                        <option>최근 30일</option>
+                        <option>최근 3개월</option>
+                        <option>최근 1년</option>
+                    </select>
+                </div>
+            </header>
+
+            <!-- 콘텐츠 패널 컨테이너 (SPA) -->
+            <div class="view-container">
+
+                <!-- [모듈 1] 트렌드 대시보드 패널 -->
+                <section id="panel-dashboard" class="content-panel active">
+                    <!-- 1행: KPI 카드 3개 -->
+                    <div class="dashboard-row kpi-row">
+                        <div class="kpi-card">
+                            <span class="label">트렌딩 토픽 수</span>
+                            <div class="value">142 <span class="trend up">▲ 12%</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="label">급상승 채널 수</span>
+                            <div class="value">89 <span class="trend up">▲ 5%</span></div>
+                        </div>
+                        <div class="kpi-card">
+                            <span class="label">평균 조회 급증률</span>
+                            <div class="value">210% <span class="trend down">▼ 3%</span></div>
+                        </div>
+                    </div>
+
+                    <!-- 2행: 주제별 바차트 & 급상승 크리에이터 -->
+                    <div class="dashboard-row grid-2col">
+                        <div class="chart-card">
+                            <h3>주제별 트렌드 강도</h3>
+                            <div class="bar-chart-container">
+                                <div class="bar-row"><span class="bar-label">AI/기술</span><div class="bar-track"><div class="bar-fill" style="width: 85%; background: var(--cat-tech);"></div><span class="score">8.5</span></div></div>
+                                <div class="bar-row"><span class="bar-label">재테크</span><div class="bar-track"><div class="bar-fill" style="width: 92%; background: var(--cat-econ);"></div><span class="score">9.2</span></div></div>
+                                <div class="bar-row"><span class="bar-label">먹방/쿡방</span><div class="bar-track"><div class="bar-fill" style="width: 76%; background: var(--cat-food);"></div><span class="score">7.6</span></div></div>
+                                <div class="bar-row"><span class="bar-label">여행/브이로그</span><div class="bar-track"><div class="bar-fill" style="width: 65%; background: var(--cat-travel);"></div><span class="score">6.5</span></div></div>
+                                <div class="bar-row"><span class="bar-label">게임</span><div class="bar-track"><div class="bar-fill" style="width: 58%; background: var(--cat-game);"></div><span class="score">5.8</span></div></div>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>🚀 최근 급상승 크리에이터</h3>
+                            <ul class="creator-list">
+                                <li>
+                                    <div class="avatar blue">S</div>
+                                    <div class="info">
+                                        <h4>소수몽키 <span class="badge badge-hot">HOT</span></h4>
+                                        <p>재테크/경제 · 26만</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="avatar pink">M</div>
+                                    <div class="info">
+                                        <h4>미주은 <span class="badge badge-up">UP</span></h4>
+                                        <p>재테크/경제 · 55만</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="avatar green">T</div>
+                                    <div class="info">
+                                        <h4>TechReview <span class="badge badge-new">NEW</span></h4>
+                                        <p>AI/기술 리뷰 · 12만</p>
+                                    </div>
+                                </li>
                             </ul>
-                        </fieldset>
-                        <fieldset style="flex:1;">
-                            <legend>🚨 시스템 긴급 경고 (신뢰도 스캔망)</legend>
-                            <ul class="tree-view">
-                                <li style="color:red; font-weight:bold;">[부업] 월 1000만원 무자본 창업 (허위 극대화 판별)</li>
-                                <li>[미주] TQQQ 단타 비법 (긍정 22% / 부정 78%)</li>
-                            </ul>
-                        </fieldset>
+                        </div>
                     </div>
-                </div>
 
-                <!-- 화면 2: 한국 주식 랭킹 전용 뷰 -->
-                <div class="view-panel" id="view-kr-stock">
-                    <h3>🇰🇷 K-Stock 모니터링 터미널</h3>
-                    <p>코스피, 코스닥 종목을 다루는 유튜버들의 극상위 상용 스펙 랭킹표입니다.</p>
-                    <table class="interactive mt-10">
-                        <thead>
-                            <tr>
-                                <th>랭킹 ▲</th>
-                                <th>채널명 (분석)</th>
-                                <th>활성 구독자 (Bot 필터)</th>
-                                <th>주요 언급 종목 (NLP)</th>
-                                <th>참여율(찐팬비율)</th>
-                                <th>월 예상 광고수익</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td>1</td><td>슈카월드 코믹스</td><td>310만 (클린 99%)</td><td>삼성전자, 금융위</td><td>S급 (8.5%)</td><td>₩1.2억</td></tr>
-                            <tr><td>2</td><td>삼프로TV</td><td>250만 (클린 95%)</td><td>반도체, HBM</td><td>A급 (5.2%)</td><td>₩2.5억</td></tr>
-                            <tr><td>3</td><td>전인구경제연구소</td><td>95만 (클린 98%)</td><td>배당주, 2차전지</td><td>A급 (6.1%)</td><td>₩6,500만</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- 화면 3: 미국 주식 랭킹 뷰 (새로 추가) -->
-                <div class="view-panel" id="view-us-stock">
-                    <h3>🇺🇸 US-Stock 벤치마킹 터미널</h3>
-                    <p>나스닥, S&P 500 등 해외 주식 시장의 흐름을 주도하는 유튜버 집중 감시망입니다.</p>
-                    <table class="interactive mt-10">
-                        <thead>
-                            <tr>
-                                <th>랭킹 ▲</th>
-                                <th>채널명</th>
-                                <th>언급 티커(Ticker)</th>
-                                <th>최근 30일 영상 평균조회수</th>
-                                <th>월 예상 광고수익</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td>1</td><td>미주은</td><td>TSLA, NVDA</td><td>32만 회</td><td>₩4,500만</td></tr>
-                            <tr><td>2</td><td>소수몽키</td><td>QQQ, AAPL</td><td>25만 회</td><td>₩3,800만</td></tr>
-                            <tr><td>3</td><td>뉴욕주민</td><td>MSFT, SPY</td><td>18만 회</td><td>₩2,200만</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- 화면 4: 부업/N잡 뷰 (새로 추가) -->
-                <div class="view-panel" id="view-side-hustle">
-                    <h3>💼 부업/N잡 수익화 채널 정밀 분석 및 사기 탐지</h3>
-                    <p>'월 천만 원', '무자본' 등 자극적인 키워드를 남발하는 채널들의 진짜 지표와 거품을 파헤칩니다.</p>
-                    <table class="interactive mt-10">
-                        <thead>
-                            <tr>
-                                <th>채널명</th>
-                                <th>주요 수익화 키워드</th>
-                                <th>광고 기만확률 (여론 기반)</th>
-                                <th>찐팬 참여율</th>
-                                <th>채널 건전도 평가</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td>신사임당</td><td>스마트스토어, 강의</td><td>양호 (15%)</td><td>8.5%</td><td>S급 (탄탄함)</td></tr>
-                            <tr><td>자청</td><td>블로그, 창업, 마케팅</td><td style="color:red">주의 요망 (62%)</td><td>4.1%</td><td>C급 (경고)</td></tr>
-                            <tr><td>OOO무자본</td><td>해외구매대행, 자동화</td><td style="color:red; font-weight:bold;">매우 위험 (89%)</td><td>1.2%</td><td>F급 (어뷰징)</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- 화면 5: 마케팅 광고 단가 뷰 (새로 추가) -->
-                <div class="view-panel" id="view-ad">
-                    <h3>💵 스폰서십(PPL) 적정 단가 예측 머신</h3>
-                    <p>유튜버에게 유튜브 광고(브랜디드)를 맡길 때, 구독자 수 거품을 빼고 진짜 시청률 기준으로 호구 맞지 않는 적정 금액(CPV)을 계산합니다.</p>
-                    <div class="field-row mt-10">
-                        <label>협찬 유튜버 채널 URL: </label>
-                        <input type="text" placeholder="https://youtube.com/c/미주은" style="width: 50%;">
-                        <button>빅데이터 단가 계산</button>
+                    <!-- 3행: 키워드 클라우드 & 요일시간 히트맵 -->
+                    <div class="dashboard-row grid-2col">
+                        <div class="chart-card">
+                            <h3>🔥 급상승 키워드 클라우드</h3>
+                            <div class="word-cloud-placeholder">
+                                <span style="font-size: 24px; color: var(--cat-tech); margin:5px;">AI 툴</span>
+                                <span style="font-size: 32px; color: var(--cat-econ); margin:5px; font-weight:bold;">나스닥 반등</span>
+                                <span style="font-size: 18px; color: var(--cat-food); margin:5px;">마라탕후루</span>
+                                <span style="font-size: 28px; color: var(--cat-tech); margin:5px;">엔비디아</span>
+                                <span style="font-size: 20px; color: var(--cat-travel); margin:5px;">일본 소도시</span>
+                                <span style="font-size: 14px; color: var(--cat-game); margin:5px;">오픈월드</span>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>업로드 & 조회 집중 피크 (히트맵 7x6 렌더링 예정)</h3>
+                            <div class="heatmap-placeholder">
+                                <div class="heatmap-grid" id="heatmapGrid">
+                                    <!-- JS에서 생성 -->
+                                </div>
+                                <div class="heatmap-legend">
+                                    <span>낮음</span>
+                                    <div class="legend-box level-1"></div>
+                                    <div class="legend-box level-2"></div>
+                                    <div class="legend-box level-3"></div>
+                                    <div class="legend-box level-4"></div>
+                                    <span>높음</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <fieldset class="mt-10" style="padding: 15px;">
-                        <legend>단가 견적서 (예시)</legend>
-                        <ul class="tree-view">
-                            <li><strong>최근 30일 평균 뷰어:</strong> 254,000 명</li>
-                            <li><strong>적정 PPL 단가 범위:</strong> ₩5,000,000 ~ ₩7,500,000</li>
-                            <li><strong>광고 효율성 (ROI):</strong> 최상급 (동급 채널 대비 전환율 높음)</li>
-                        </ul>
-                    </fieldset>
-                </div>
 
-                <!-- 화면 6: 댓글 여론 온도계 -->
-                <div class="view-panel" id="view-sentiment">
-                    <h3>💬 AI 댓글 여론 자동 판독기 (진실 탐지용)</h3>
-                    <p>조회수가 높은 부업 영상의 숨겨진 '대댓글 반박', '비판 댓글'을 구글 API로 추출해 진짜 민심을 팩트체크합니다.</p>
-                    <div class="field-row" style="margin: 15px 0;">
-                        <label>영상 URL 입력: </label>
-                        <input type="text" value="https://youtube.com/watch?v=scam_video" style="width:60%;">
-                        <button>AI 정밀스캔 시작</button>
+                    <!-- 4행: 주간 트렌드 변화 (스파크라인) / 카테고리 비중 -->
+                    <div class="dashboard-row grid-2-1col">
+                        <div class="chart-card">
+                            <h3>주간 최상위 3섹터 스파크라인 (7일 추이)</h3>
+                            <div class="sparkline-placeholder">
+                                <!-- 차트.js 연동 예정 컴포넌트 -->
+                                <div style="height: 100px; border-bottom: 2px dashed var(--border); position:relative; margin-top:20px;">
+                                    <span style="position:absolute; bottom:5px; right:5px; color:var(--text-muted); font-size:12px;">Data Rendering Graph (Mock)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>카테고리 비중 (Total)</h3>
+                            <div class="pie-placeholder">
+                                점유율 분배 (Pie/Bar) 구역
+                            </div>
+                        </div>
                     </div>
-                    
-                    <fieldset>
-                        <legend>딥러닝 단어/감성 요약표</legend>
-                        <ul class="tree-view">
-                        <li><strong>신뢰/우호 여론</strong>: - % 
-                        </li>
-                        <li><strong>반박/비판 여론</strong>: - % 
-                        </li>
-                        <br>
-                        <li><strong>최종 신뢰도 판독 결과</strong>: <span style="color:blue; font-size:13px;">API 쿼리 대기 중...</span></li>
-                        </ul>
-                    </fieldset>
-                </div>
+                </section>
+
+                <!-- [모듈 2] 채널 분석기 패널 -->
+                <section id="panel-analyzer" class="content-panel">
+                    <!-- URL 입력 바 -->
+                    <div class="search-bar-container">
+                        <input type="text" id="channelUrlInput" placeholder="채널 URL 또는 @핸들명을 입력하세요... (예: @shukaworld)">
+                        <button id="btnAnalyze">분석하기</button>
+                    </div>
+
+                    <!-- 분석 전 Empty State -->
+                    <div class="empty-state" id="analyzer-empty">
+                        <div class="empty-icon">🔍</div>
+                        <h3>채널 데이터를 대기 중입니다.</h3>
+                        <p>위 검색창에 채널 URL을 입력하고 분석하기를 눌러주세요.</p>
+                    </div>
+
+                    <!-- 분석 결과 State (JS에서 제어) -->
+                    <div class="result-state" id="analyzer-result" style="display: none;">
+                        
+                        <!-- 채널 헤더 구조 -->
+                        <div class="channel-header card">
+                            <div class="c-info">
+                                <div class="avatar red" id="resAvatar">슈</div>
+                                <div>
+                                    <h2 id="resName">슈카월드</h2>
+                                    <p class="handle" id="resHandle">@syukaworld · <span class="cat-tag">재테크/경제</span></p>
+                                </div>
+                            </div>
+                            <button class="btn-fav" id="btnToggleFav">☆ 즐겨찾기</button>
+                        </div>
+
+                        <!-- 1행: KPI 3종 -->
+                        <div class="dashboard-row kpi-row mt-15">
+                            <div class="kpi-card"><span class="label">구독자 수</span><div class="value">3.2M</div></div>
+                            <div class="kpi-card"><span class="label">평균 조회수 (최근 10개)</span><div class="value">1.45M</div></div>
+                            <div class="kpi-card"><span class="label">업로드 빈도</span><div class="value">주 4.2회</div></div>
+                        </div>
+
+                        <!-- 2행: 성과지표 바차트 & AI 인사이트 -->
+                        <div class="dashboard-row grid-2col mt-15">
+                            <div class="chart-card">
+                                <h3>채널 성과 레이더 (5대 지수)</h3>
+                                <div class="bar-chart-container small">
+                                    <div class="bar-row"><span>콘텐츠 일관성</span><div class="bar-track"><div class="bar-fill" style="width: 95%; background: var(--accent);"></div><span>95</span></div></div>
+                                    <div class="bar-row"><span>참여 지수 (찐팬)</span><div class="bar-track"><div class="bar-fill" style="width: 82%; background: var(--primary);"></div><span>82</span></div></div>
+                                    <div class="bar-row"><span>성장세 (최근)</span><div class="bar-track"><div class="bar-fill" style="width: 45%; background: var(--cat-tech);"></div><span>45</span></div></div>
+                                    <div class="bar-row"><span>SEO 최적화도</span><div class="bar-track"><div class="bar-fill" style="width: 88%; background: var(--cat-food);"></div><span>88</span></div></div>
+                                    <div class="bar-row"><span>바이럴 가능성</span><div class="bar-track"><div class="bar-fill" style="width: 76%; background: var(--cat-game);"></div><span>76</span></div></div>
+                                </div>
+                            </div>
+                            <div class="chart-card">
+                                <h3>💡 AI 인사이트 진단</h3>
+                                <ul class="insight-list">
+                                    <li><span class="dot green"></span> <strong>안정적 코어팬:</strong> 평균 조회수가 구독자 대비 매우 높음.</li>
+                                    <li><span class="dot blue"></span> <strong>검색 유입 우수:</strong> 경제 이슈 키워드 SEO 세팅이 정교함.</li>
+                                    <li><span class="dot red"></span> <strong>신규 구독자 정체:</strong> 성장세가 둔화됨(쇼츠 활성화 필요).</li>
+                                    <li><span class="dot orange"></span> <strong>강력한 체류시간:</strong> 시청 이탈률이 일반 채널의 절반 수준.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- 3행: 인기 동영상 썸네일 카드 3개 -->
+                        <div class="mt-15">
+                            <h3 style="margin-bottom: 10px;">🏆 인기 동영상 TOP 3 (최근 30일)</h3>
+                            <div class="video-cards">
+                                <div class="vid-card">
+                                    <div class="thumb color-1">▶</div>
+                                    <div class="v-info"><h4>금융위발 부동산 쇼크 분석</h4><p>어제 · 150만 조회수</p></div>
+                                </div>
+                                <div class="vid-card">
+                                    <div class="thumb color-2">▶</div>
+                                    <div class="v-info"><h4>엔비디아 폭락의 진짜 이유</h4><p>3일 전 · 122만 조회수</p></div>
+                                </div>
+                                <div class="vid-card">
+                                    <div class="thumb color-3">▶</div>
+                                    <div class="v-info"><h4>초전도체 테마주의 최후</h4><p>1주 전 · 110만 조회수</p></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- [모듈 3] 수익 예측 매뉴 -->
+                <section id="panel-revenue" class="content-panel">
+                    <div class="card p-20">
+                        <h3>💰 채널 수익 및 적정 광고단가 예측기</h3>
+                        <p class="text-muted" style="margin:10px 0 20px;">특정 유튜버에게 광고(PPL)를 의뢰할 때 호구 잡히지 않기 위한 예상 단가 검증기입니다.</p>
+                        
+                        <div class="search-bar-container">
+                            <input type="text" placeholder="채널 핸들을 입력하세요 (@이름)">
+                            <button>가치 산출</button>
+                        </div>
+                        
+                        <div class="revenue-mock-result mt-15" style="border: 1px dashed var(--border); padding: 20px; border-radius: 8px;">
+                            <h4 style="color: var(--primary);">[예상 결과 샘플]</h4>
+                            <p><strong>구독자 거품 제거 후 진성 시청자:</strong> 35만 명</p>
+                            <p><strong>적정 PPL 단가(CPV 기준):</strong> ₩ 15,000,000 ~ 18,000,000</p>
+                            <p><strong>월 광고 수익(유튜브 내장):</strong> ₩ 8,000,000 수준</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 미구현 패널 더미 -->
+                <section id="panel-topic" class="content-panel"><div class="empty-state"><h3>주제별 분석</h3><p>기능 준비 중입니다.</p></div></section>
+                <section id="panel-keyword" class="content-panel"><div class="empty-state"><h3>키워드 탐색</h3><p>기능 준비 중입니다.</p></div></section>
 
             </div>
-        </div>
-        
-        <!-- 하단 상태 표시줄 -->
-        <div class="status-bar">
-            <p class="status-bar-field">✅ 마스터 터미널 부팅 완료</p>
-            <p class="status-bar-field" id="statusMsg" style="color: blue;">대기 중...</p>
-            <p class="status-bar-field">DB: Local Mock Build</p>
-        </div>
+        </main>
     </div>
 
+    <!-- JS 연동 -->
     <script src="js/app.js"></script>
 </body>
 </html>
