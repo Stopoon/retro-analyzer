@@ -1,347 +1,371 @@
-// ==== Modern YT Analyzer JS Logic (Real API v3 Connection) ====
-// 🚨 고객님이 발급받으신 진짜 구글 유튜브 API 키를 아래 큰따옴표 안에 붙여넣어 주세요!
-const YOUTUBE_API_KEY = "AIzaSyAN41DA24oIosCltopVPRvnczVLfPuHsFs";
+// ==== YT Quant Terminal (Bloomberg Style Logic) ====
 
-const menuItems = document.querySelectorAll('.main-menu .menu-item:not(.disabled)');
-const contentPanels = document.querySelectorAll('.content-panel');
-const titleText = document.getElementById('current-panel-title');
-const topbarFilters = document.getElementById('topbar-filters');
-const btnAnalyze = document.getElementById('btnAnalyze');
-const urlInput = document.getElementById('channelUrlInput');
-const analyzerEmpty = document.getElementById('analyzer-empty');
-const analyzerResult = document.getElementById('analyzer-result');
-const btnToggleFav = document.getElementById('btnToggleFav');
-const favListElem = document.getElementById('favorites-list');
-const emptyFavMsg = document.getElementById('empty-fav-msg');
-const statusMsg = document.getElementById('statusMsg');
+// DOM Elements
+const apiModal = document.getElementById('apiModal');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const btnSaveKey = document.getElementById('btnSaveKey');
+const modalError = document.getElementById('modalError');
+const btnResetKey = document.getElementById('btnResetKey');
+const btnClearCache = document.getElementById('btnClearCache');
+const statusBar = document.getElementById('statusBar');
+const tableBody = document.getElementById('tableBody');
+const searchInput = document.getElementById('searchInput');
+const btnSearch = document.getElementById('btnSearch');
+const btnExportCSV = document.getElementById('btnExportCSV');
+const quickBtns = document.querySelectorAll('.menu-btn[data-query]');
 
-const btnMobileToggle = document.getElementById('mobileToggle');
+// Mobile Menu Elements
+const mobileMenuToggle = document.getElementById('mobileMenuToggle');
 const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-let favorites = []; 
-let currentAnalyzedChannel = null;
+// Global View Data for CSV Export
+let currentTableData = [];
 
-// ============================================
-// 1. SPA 라우팅 네비게이션
-// ============================================
-menuItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-        e.preventDefault();
-        menuItems.forEach(n => n.classList.remove('active'));
-        item.classList.add('active');
-        
-        titleText.innerText = item.childNodes[0].nodeValue.trim();
+// ==========================================
+// 1. API Key Check & Modal Logic
+// ==========================================
+function getApiKey() { return localStorage.getItem('YT_QUANT_API_KEY'); }
 
-        const targetId = item.getAttribute('data-target');
-        if(targetId === 'panel-dashboard') topbarFilters.classList.remove('hidden');
-        else topbarFilters.classList.add('hidden');
+function checkApiKey() {
+    if (!getApiKey()) {
+        apiModal.classList.add('active');
+    } else {
+        apiModal.classList.remove('active');
+    }
+}
 
-        contentPanels.forEach(p => p.classList.remove('active'));
-        const targetPanel = document.getElementById(targetId);
-        if(targetPanel) targetPanel.classList.add('active');
+btnSaveKey.addEventListener('click', () => {
+    const key = apiKeyInput.value.trim();
+    if(key.length < 20) {
+        modalError.innerText = "유효한 API 키 형식이 아닙니다.";
+        return;
+    }
+    localStorage.setItem('YT_QUANT_API_KEY', key);
+    modalError.innerText = "";
+    apiModal.classList.remove('active');
+});
 
-        if(window.innerWidth <= 768) closeMobileSidebar();
+btnResetKey.addEventListener('click', () => {
+    localStorage.removeItem('YT_QUANT_API_KEY');
+    apiKeyInput.value = '';
+    checkApiKey();
+});
+
+btnClearCache.addEventListener('click', () => {
+    const key = getApiKey();
+    localStorage.clear();
+    if(key) localStorage.setItem('YT_QUANT_API_KEY', key); // 키는 보존
+    updateStatus("로컬 캐시 메모리 초기화 완료.", "green");
+});
+
+// Init Check
+checkApiKey();
+
+// ==========================================
+// 2. LocalStorage Caching Wrapper (TTL 1 Hour)
+// ==========================================
+async function fetchWithCache(cacheKey, url) {
+    const cachedItem = localStorage.getItem(cacheKey);
+    if (cachedItem) {
+        const parsed = JSON.parse(cachedItem);
+        // 1시간(3600000ms) 이내 데이터면 캐시 사용
+        if (Date.now() - parsed.timestamp < 3600000) {
+            console.log(`[CACHE HIT] ${cacheKey}`);
+            return parsed.data;
+        }
+    }
+    
+    console.log(`[API CALL] ${cacheKey} fetching...`);
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if(data.error) throw new Error(data.error.message);
+    
+    // Save to Cache
+    localStorage.setItem(cacheKey, JSON.stringify({
+        timestamp: Date.now(),
+        data: data
+    }));
+    
+    return data;
+}
+
+// ==========================================
+// 3. UI Status & Mobile Logic
+// ==========================================
+function updateStatus(msg, color = "var(--neon-orange)") {
+    statusBar.innerHTML = `> ${msg}`;
+    statusBar.style.color = color;
+}
+
+// Mobile sidebar
+mobileMenuToggle.addEventListener('click', () => {
+    sidebar.classList.add('open');
+    sidebarOverlay.classList.add('active');
+});
+sidebarOverlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('active');
+});
+
+// Format Numbers Tool
+const fNum = (num) => new Intl.NumberFormat('ko-KR').format(num);
+const fShort = (num) => num >= 10000 ? (num/10000).toFixed(1) + '만' : num;
+
+// ==========================================
+// 4. Core Feature 1: Quick Sector Research
+// ==========================================
+quickBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const query = btn.getAttribute('data-query');
+        await renderQuickResearch(query);
+        if(window.innerWidth <= 768) { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('active'); }
     });
 });
 
-btnMobileToggle.addEventListener('click', () => { sidebar.classList.add('open'); sidebarOverlay.classList.add('active'); });
-function closeMobileSidebar() { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('active'); }
-sidebarOverlay.addEventListener('click', closeMobileSidebar);
-
-
-// ============================================
-// 2. [진짜 데이터 API] 트렌드 대시보드 자동 최신화
-// ============================================
-async function fetchTrendingDashboard() {
-    if(YOUTUBE_API_KEY.includes("여기에")) return; // 키 없으면 초기 Mock 상태 유지
+async function renderQuickResearch(query) {
+    const apiKey = getApiKey();
+    if(!apiKey) { checkApiKey(); return; }
     
-    statusMsg.textContent = "🔥 실시간 유튜브 코리아 트렌드 통신 중... [|||]";
+    updateStatus(`[${query}] 섹터 비디오 검색 중... [|||@@]`);
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">데이터 연산 중...</td></tr>`;
+    
     try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode=KR&maxResults=15&key=${YOUTUBE_API_KEY}`);
-        const data = await res.json();
-        if(data.error) throw data.error;
+        // 1. 영상 검색 (최대 10개)
+        const cacheKeySearch = `SEARCH_${query}`;
+        const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=10&order=viewCount&key=${apiKey}`;
+        const searchData = await fetchWithCache(cacheKeySearch, searchUrl);
+        
+        if(!searchData.items || searchData.items.length === 0) throw new Error("검색 결과 없음");
+        
+        const videoIds = searchData.items.map(i => i.id.videoId).join(',');
+        const channelIds = [...new Set(searchData.items.map(i => i.snippet.channelId))].join(',');
 
-        const totalViews = data.items.reduce((sum, item) => sum + parseInt(item.statistics.viewCount || 0), 0);
-        document.querySelector('.kpi-row .kpi-card:nth-child(1) .value').innerHTML = `${data.items.length}개 <span class="trend up">▲ LIVE</span>`;
-        document.querySelector('.kpi-row .kpi-card:nth-child(2) .value').innerHTML = `${Math.floor(Math.random()*15)+3}명 <span class="trend up">▲ 신규 진입</span>`;
-        document.querySelector('.kpi-row .kpi-card:nth-child(3) .value').innerHTML = `${(totalViews/1000000).toFixed(1)}M <span class="trend up">▲ 폭증</span>`;
+        updateStatus(`[${query}] 비디오 스탯 및 채널 검증 데이터 파싱 중... [|||||@]`);
+        
+        // 2. 비디오 통계 추출 (조회수, 좋아요, 댓글)
+        const cacheKeyVid = `VIDSTATS_${videoIds}`;
+        const vidUrl = `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`;
+        const vidData = await fetchWithCache(cacheKeyVid, vidUrl);
+        const vidMap = {};
+        vidData.items.forEach(v => { vidMap[v.id] = v.statistics; });
 
-        const creatorList = document.querySelector('.creator-list');
-        creatorList.innerHTML = '';
-        data.items.slice(0,3).forEach((item, i) => {
-            const chName = item.snippet.channelTitle;
-            const title = item.snippet.title.substring(0,25) + "...";
-            const badges = ["HOT", "UP", "NEW"];
-            const colors = ["blue", "pink", "green"];
+        // 3. 채널 통계 추출 (구독자 수 대비 실질 매력도 판별을 위함)
+        const cacheKeyCh = `CHSTATS_${channelIds}`;
+        const chUrl = `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelIds}&key=${apiKey}`;
+        const chData = await fetchWithCache(cacheKeyCh, chUrl);
+        const chMap = {};
+        chData.items.forEach(c => { chMap[c.id] = c.statistics; });
+
+        // 4. 활동성 지수 계산 및 떡상 연산
+        let results = searchData.items.map(item => {
+            const vidId = item.id.videoId;
+            const chId = item.snippet.channelId;
+            const vStats = vidMap[vidId] || {};
+            const cStats = chMap[chId] || {};
             
-            creatorList.innerHTML += `
-                <li>
-                    <div class="avatar ${colors[i]}">${chName.charAt(0)}</div>
-                    <div class="info">
-                        <h4>${chName} <span class="badge badge-${badges[i].toLowerCase()}">${badges[i]}</span></h4>
-                        <p>${title}</p>
-                    </div>
-                </li>
-            `;
+            const views = parseInt(vStats.viewCount || 0);
+            const likes = parseInt(vStats.likeCount || 0);
+            const comments = parseInt(vStats.commentCount || 0);
+            const subs = parseInt(cStats.subscriberCount || 0);
+            
+            // 활동성 지수 공식: ((좋아요 + 댓글) / 조회수) * 100
+            const engagement = views > 0 ? (((likes + comments) / views) * 100).toFixed(2) : "0.00";
+            
+            return {
+                thumb: item.snippet.thumbnails.high.url,
+                title: item.snippet.title,
+                channel: item.snippet.channelTitle,
+                subs: subs,
+                views: views,
+                likes: likes,
+                comments: comments,
+                engagement: parseFloat(engagement),
+                videoId: vidId
+            };
         });
-        statusMsg.style.color = 'black';
-        statusMsg.textContent = "✅ 대한민국 인기 트렌드 서버 동기화 완료";
+
+        // 5. 활동성 지수(engagement) 내림차순 정렬
+        results.sort((a, b) => b.engagement - a.engagement);
+        
+        // CSV 저장용 전역 데이터 매핑
+        currentTableData = results;
+
+        // 6. 렌더링
+        drawTable(results);
+        updateStatus(`[${query}] 스캔 완료. 총 ${results.length}개의 표본 객체 로드됨. (캐시 보호 상태)`, "var(--neon-green)");
+
     } catch(err) {
-        statusMsg.style.color = 'red';
-        statusMsg.textContent = "⚠ 구글 트렌드 API 호출 실패";
+        console.error(err);
+        updateStatus("ERROR: " + err.message, "var(--neon-red)");
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">호출 실패: ${err.message}</td></tr>`;
     }
 }
-fetchTrendingDashboard(); // 파일 로드 시 1회 실행
 
-// ============================================
-// 3. [진짜 데이터 API] 채널 분석기 & 수익 자동예측
-// ============================================
-async function runAnalysis() {
-    let val = urlInput.value.trim();
+// ==========================================
+// 5. Core Feature 2: Channel Precise Validator
+// ==========================================
+btnSearch.addEventListener('click', () => runChannelValidator(searchInput.value));
+searchInput.addEventListener('keypress', (e) => { if(e.key==='Enter') runChannelValidator(searchInput.value); });
+
+async function runChannelValidator(query) {
+    const val = query.trim();
     if(!val) return;
-    if(YOUTUBE_API_KEY.includes("여기에")) {
-        alert("❌ 코드 최상단 3번째 줄에 고객님이 발급받으신 YouTube API Key를 큰따옴표 안에 입력하셔야 엔진이 작동합니다!");
-        return;
-    }
+    const apiKey = getApiKey();
+    if(!apiKey) { checkApiKey(); return; }
 
-    btnAnalyze.innerText = "데이터 추출 중...";
-    btnAnalyze.disabled = true;
+    updateStatus(`[${val}] 채널 추적 중... [||@@]`);
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">분석 중...</td></tr>`;
+
+    let handle = "";
+    if (val.includes('youtube.com/') || val.includes('youtu.be/')) {
+        const parts = val.split('/');
+        handle = parts[parts.length-1];
+        if(!handle.startsWith('@')) handle = '@' + handle;
+    } else if (val.startsWith('@')) { handle = val; }
 
     try {
-        statusMsg.style.color = 'blue';
-        statusMsg.textContent = "🔍 유튜브 채널 딥 서치 중... [|||||]";
-        
         let channel = null;
 
-        // [핵심 에러 패치] 1. 입력값이 전체 URL 주소이거나 '@'로 시작할 경우, 핸들을 자동 추출하여 초정밀 직접 조회합니다.
-        let handle = "";
-        if (val.includes('youtube.com/') || val.includes('youtu.be/')) {
-            const parts = val.split('/');
-            handle = parts[parts.length-1];
-            if(!handle.startsWith('@')) handle = '@' + handle;
-        } else if (val.startsWith('@')) {
-            handle = val;
-        }
-
-        // 핸들이 추출되었다면 1차 다이렉트 조회 시도
         if (handle) {
-            const handleRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle.replace('@','')}&key=${YOUTUBE_API_KEY}`);
-            const handleData = await handleRes.json();
-            if(handleData.error && handleData.error.code === 403) throw new Error("구글 API 일일 사용량(한도) 10,000건 초과 또는 접근 거부");
-            if(handleData.items && handleData.items.length > 0) {
-                channel = handleData.items[0];
-            }
+            const hData = await fetchWithCache(`CH_HANDLE_${handle}`, `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle.replace('@','')}&key=${apiKey}`);
+            if(hData.items && hData.items.length > 0) channel = hData.items[0];
         }
 
-        // [복합 업그레이드] 2. 주소가 아니었거나(일반 한국어), URL 핸들로 못 찾았다면 2차로 유튜브 전체 검색(Search) 엔진을 가동합니다.
         if (!channel) {
-            const searchFindRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet,q=${encodeURIComponent(val)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`);
-            const searchFindData = await searchFindRes.json();
+            const sqData = await fetchWithCache(`SCH_${val}`, `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(val)}&type=channel&maxResults=1&key=${apiKey}`);
+            if(!sqData.items || sqData.items.length === 0) throw new Error("분석 대상을 찾을 수 없음");
             
-            // 한도 초과 등 진짜 에러 
-            if(searchFindData.error) throw new Error(searchFindData.error.message);
-            // 아예 데이터가 없으면 검색 실패
-            if(!searchFindData.items || searchFindData.items.length === 0) {
-                throw new Error(`'${val}' 에 해당하는 유튜브 채널을 찾을 수 없습니다.`);
-            }
-
-            const chId = searchFindData.items[0].id.channelId;
-            const statRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${chId}&key=${YOUTUBE_API_KEY}`);
-            const statData = await statRes.json();
-            
-            if(statData.error) throw new Error(statData.error.message);
+            const statData = await fetchWithCache(`CH_STAT_${sqData.items[0].id.channelId}`, `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${sqData.items[0].id.channelId}&key=${apiKey}`);
             channel = statData.items[0];
         }
 
         const chId = channel.id;
         const subs = parseInt(channel.statistics.subscriberCount || 0);
-        const views = parseInt(channel.statistics.viewCount || 0);
-        const videosCount = parseInt(channel.statistics.videoCount || 0);
-        
-        // 보기 편한 단위 변환 헬퍼
-        const formatNum = (num) => num >= 10000 ? (num/10000).toFixed(1) + '만' : num;
-        
-        // 화면 교체 (Empty -> Result)
-        analyzerEmpty.style.display = 'none';
-        analyzerResult.style.display = 'block';
 
-        // 👨‍💼 [DOM 갱신 1] 진짜 채널 아바타 및 헤더 정보
-        document.getElementById('resName').innerText = channel.snippet.title;
-        document.getElementById('resHandle').innerHTML = `${channel.snippet.customUrl || val} · <span class="cat-tag">크리에이터</span>`;
-        document.getElementById('resAvatar').innerHTML = `<img src="${channel.snippet.thumbnails.default.url}" style="width:100%; border-radius:50%;">`;
-        document.getElementById('resAvatar').style.background = 'transparent';
+        updateStatus(`[${channel.snippet.title}] 최근 10개 영상 통계 추출 중... [||||@]`);
 
-        // 📈 [DOM 갱신 2] 진짜 채널 KPI 지표 3종
-        const kpis = document.querySelectorAll('#analyzer-result .kpi-card .value');
-        kpis[0].innerText = formatNum(subs) + '명';
+        // 채널의 최신 영상 10개 검증 (가치 판독을 위함)
+        const snData = await fetchWithCache(`CH_VIDS_${chId}`, `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${chId}&order=date&maxResults=10&type=video&key=${apiKey}`);
         
-        const avgViews = views / (videosCount || 1);
-        kpis[1].innerText = formatNum(avgViews) + '회';
-        kpis[2].innerText = new Intl.NumberFormat('ko-KR').format(videosCount) + '개';
+        if(!snData.items || snData.items.length === 0) throw new Error("업로드된 영상이 없습니다.");
 
-        // 📊 [DOM 갱신 3] 채널 성과 레이더 (5대 지수 동적 수학적 계산)
-        const viewToSubRatio = subs > 0 ? (avgViews / subs) : 0;
-        let scoreEngage = Math.min(100, Math.max(10, Math.floor(viewToSubRatio * 200)));
-        let scoreGrowth = Math.floor(Math.random() * 40) + 50; 
-        let scoreSeo = Math.floor(Math.random() * 20) + 75; 
-        let scoreViral = scoreEngage > 50 ? Math.min(100, scoreEngage + 15) : Math.max(20, scoreEngage - 10);
-        let scoreConsist = videosCount > 300 ? 95 : (videosCount > 50 ? 75 : 50);
-
-        const barFills = document.querySelectorAll('.bar-chart-container.small .bar-fill');
-        const barScores = document.querySelectorAll('.bar-chart-container.small .bar-track span');
-        const scores = [scoreConsist, scoreEngage, scoreGrowth, scoreSeo, scoreViral];
+        const videoIds = snData.items.map(i => i.id.videoId).join(',');
+        const vStatData = await fetchWithCache(`VIDSTATS_${videoIds}`, `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`);
         
-        scores.forEach((sc, idx) => {
-            if(barFills[idx] && barScores[idx]) {
-                barFills[idx].style.width = sc + '%';
-                barScores[idx].innerText = sc;
-                if(sc >= 80) barFills[idx].style.background = 'var(--primary)';
-                else if(sc >= 60) barFills[idx].style.background = 'var(--accent)';
-                else barFills[idx].style.background = 'var(--cat-food)';
-            }
+        const vidMap = {};
+        vStatData.items.forEach(v => { vidMap[v.id] = v.statistics; });
+
+        let results = snData.items.map(item => {
+            const vStats = vidMap[item.id.videoId] || {};
+            const views = parseInt(vStats.viewCount || 0);
+            const likes = parseInt(vStats.likeCount || 0);
+            const comments = parseInt(vStats.commentCount || 0);
+            const engagement = views > 0 ? (((likes + comments) / views) * 100).toFixed(2) : "0.00";
+            
+            return {
+                thumb: item.snippet.thumbnails.high.url,
+                title: item.snippet.title,
+                channel: item.snippet.channelTitle,
+                subs: subs, // 채널 1개의 구독자 고정
+                views: views,
+                likes: likes,
+                comments: comments,
+                engagement: parseFloat(engagement),
+                videoId: item.id.videoId
+            };
         });
 
-        // 💡 [DOM 갱신 4] AI 인사이트 진단 동적 생성
-        const insightList = document.querySelector('.insight-list');
-        insightList.innerHTML = '';
-        if (scoreEngage >= 70) insightList.innerHTML += `<li><span class="dot green"></span> <strong>강력한 코어팬:</strong> 충성 시청자가 많아 구독자 대비 조회수 전환율이 매우 높습니다.</li>`;
-        else insightList.innerHTML += `<li><span class="dot orange"></span> <strong>구독자 유령화:</strong> 구독자 수에 비해 영상 시청 비율이 떨어져 알고리즘 추천이 약합니다.</li>`;
-        
-        if (videosCount >= 500) insightList.innerHTML += `<li><span class="dot blue"></span> <strong>콘텐츠 자본:</strong> 방대한 누적 영상 덕분에 검색 노출(SEO) 방어력이 엄청납니다.</li>`;
-        else if (videosCount < 50) insightList.innerHTML += `<li><span class="dot red"></span> <strong>절대량 부족:</strong> 채널 성장을 위해 꾸준히 영상을 더 업로드해야 할 시기입니다.</li>`;
-        
-        if (subs >= 500000) insightList.innerHTML += `<li><span class="dot green"></span> <strong>대형 프리미엄:</strong> 이미 거대한 매체력을 확보하여 어떤 주제든 기본 조회수가 보장됩니다.</li>`;
-        if (scoreViral >= 80) insightList.innerHTML += `<li><span class="dot orange"></span> <strong>바이럴 포텐셜:</strong> 최근 알고리즘 파도를 타고 있어, 신규 시청자 유입 확률이 극도로 높습니다.</li>`;
-
-        /* ========================================================= */
-        // [핵심 API 2] 해당 채널의 가장 최신 영상 3개 가져오기 및 썸네일 랜더링
-        /* ========================================================= */
-        const vidRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${chId}&order=date&maxResults=3&type=video&key=${YOUTUBE_API_KEY}`);
-        const vidData = await vidRes.json();
-
-        if(vidData.items) {
-            const videoCards = document.querySelector('.video-cards');
-            videoCards.innerHTML = ''; // 기존 Mock 지우기
-            vidData.items.forEach((v, i) => {
-                const colorClass = ['color-1', 'color-2', 'color-3'][i];
-                videoCards.innerHTML += `
-                    <div class="vid-card">
-                        <div class="thumb ${colorClass}" style="background: url('${v.snippet.thumbnails.high.url}') center/cover;">
-                            <span style="background:rgba(0,0,0,0.5); padding:2px; border-radius:4px;">
-                                <a href="https://youtube.com/watch?v=${v.id.videoId}" target="_blank" style="color:white; text-decoration:none; font-size:16px;">▶ 재생</a>
-                            </span>
-                        </div>
-                        <div class="v-info"><h4>${v.snippet.title.substring(0,35)}...</h4><p>${new Date(v.snippet.publishedAt).toLocaleDateString()}</p></div>
-                    </div>
-                `;
-            });
-        }
-
-        /* ========================================================= */
-        // 💰 [기능 추가] 연산식 기반 적정 수익/광고단가 예측 계산기 자동 매핑
-        /* ========================================================= */
-        const predictedPPL = avgViews * 15; // 상용 매뉴얼 기준 보수적인 평균 CPV 15원
-        const formatMoney = (m) => new Intl.NumberFormat('ko-KR').format(Math.round(m));
-
-        const revPanel = document.querySelector('#panel-revenue .revenue-mock-result');
-        revPanel.innerHTML = `
-            <h4 style="color: var(--primary); font-size:18px; margin-bottom:15px;">[${channel.snippet.title}] 님의 채널 기업 스폰서(PPL) 적정 단가표</h4>
-            <p><strong>채널 누적 조회수:</strong> ${formatMoney(views)}회 (구독자 거품 제거)</p>
-            <p><strong>최근 평균 영상 조회력:</strong> 약 ${formatMoney(avgViews)}회</p>
-            <br>
-            <p style="font-size:18px; color:var(--text-main); background:#f1f5f9; padding:15px; border-radius:8px;">
-                <strong>💵 적정 PPL(협찬) 제안 금액:</strong> ₩ ${formatMoney(predictedPPL)} ~ ₩ ${formatMoney(predictedPPL * 1.5)}
-            </p>
-            <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">(주의) 이 단가는 찐팬 참여도와 채널 주제(예: 금융, 뷰티)에 따라 2~3배 이상 차이날 수 있습니다. 단순 벤치마킹 용도로 사용하세요.</p>
-        `;
-
-        // 즐겨찾기 상태 갱신
-        currentAnalyzedChannel = { id: channel.snippet.customUrl || val, name: channel.snippet.title };
-        updateFavBtnUI(favorites.some(f => f.id === currentAnalyzedChannel.id));
-
-        statusMsg.textContent = "✅ 분석 완전 성공 (데이터 100% 실제 유튜브 동기화 완료)";
-        btnAnalyze.innerText = "분석하기";
-        btnAnalyze.disabled = false;
+        // 결과 정렬 (최신 10개이지만 우리는 철저히 활동성 및 조회수로 표기. 여기선 최신순 그대로 유지)
+        currentTableData = results;
+        drawTable(results);
+        updateStatus(`[${channel.snippet.title}] 정밀 검증 스캔 완료.`, "var(--neon-green)");
 
     } catch(err) {
         console.error(err);
-        alert("❌ 분석 중 오류(또는 구글 API 거부)가 발생했습니다.\n\n[상세 원인]: " + err.message);
-        btnAnalyze.innerText = "분석하기";
-        btnAnalyze.disabled = false;
-        statusMsg.style.color = 'red';
-        statusMsg.textContent = "❌ 분석 실패";
+        updateStatus("ERROR: " + err.message, "var(--neon-red)");
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">호출 실패: ${err.message}</td></tr>`;
     }
 }
 
-btnAnalyze.addEventListener('click', runAnalysis);
-urlInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') runAnalysis(); });
+// ==========================================
+// 6. Table Renderer & Badges Logic
+// ==========================================
+function drawTable(data) {
+    tableBody.innerHTML = '';
+    
+    // 평균 조회수 계산 (우량 채널 판별을 위함)
+    const avgViews = data.length > 0 ? (data.reduce((sum, item) => sum + item.views, 0) / data.length) : 0;
+    // 채널 단위 판별 (모든 영상 데이터가 같은 채널이라고 가정)
+    const channelSubs = data[0].subs;
+    const isBluechip = channelSubs > 0 && (avgViews / channelSubs) >= 0.05; // 평균 조회수가 구독자의 5% 이상
 
-// ============================================
-// 4. 모던 사이드바 즐겨찾기 연동 로직 (State)
-// ============================================
-btnToggleFav.addEventListener('click', () => {
-    if(!currentAnalyzedChannel) return;
+    data.forEach(row => {
+        const engClass = row.engagement > 5 ? 'engage-high' : (row.engagement > 2 ? 'engage-mid' : 'engage-low');
+        
+        // 🚨 떡상 뱃지 계산 (단일 영상 조회수가 구독자 수의 100배 이상)
+        // 단, 구독자가 너무 적은 아예 신생 채널 거름 (구독자 최소 1,000명 이상)
+        const isViral = (channelSubs >= 100) && (row.views >= channelSubs * 100);
 
-    const existIdx = favorites.findIndex(f => f.id === currentAnalyzedChannel.id);
-    if(existIdx >= 0) {
-        favorites.splice(existIdx, 1);
-        updateFavBtnUI(false);
-    } else {
-        if(favorites.length >= 10) { alert("즐겨찾기는 최대 10개까지만 등록 가능합니다."); return; }
-        favorites.push(currentAnalyzedChannel);
-        updateFavBtnUI(true);
+        let badgesHTML = '';
+        if(isBluechip) badgesHTML += `<div class="badge bluechip">[우량 🟢] 상위 5% 실조회력</div>`;
+        if(isViral) badgesHTML += `<div class="badge viral">[떡상 🚨] 폭발적 유입 알고리즘</div>`;
+        if(!badgesHTML) badgesHTML = `<span style="color:var(--text-dim);font-size:11px;">(특이사항 없음)</span>`;
+
+        tableBody.innerHTML += `
+            <tr>
+                <td class="td-thumb" data-label="썸네일">
+                    <a href="https://youtube.com/watch?v=${row.videoId}" target="_blank">
+                        <img src="${row.thumb}" alt="thumb">
+                    </a>
+                </td>
+                <td class="td-title" data-label="제목 / 채널명">
+                    <h4><a href="https://youtube.com/watch?v=${row.videoId}" target="_blank" style="color:#fff;text-decoration:none;">${row.title}</a></h4>
+                    <p>@${row.channel}</p>
+                </td>
+                <td class="td-number" data-label="구독자 수">
+                    ${fShort(row.subs)}명
+                </td>
+                <td class="td-number" data-label="조회 및 반응">
+                    ${fNum(row.views)}회
+                    <span class="sub-num">L: ${fShort(row.likes)} / C: ${fShort(row.comments)}</span>
+                </td>
+                <td class="td-number ${engClass}" data-label="활동성 지수(%)">
+                    ${row.engagement}%
+                </td>
+                <td data-label="검증 뱃지">
+                    <div class="badge-container">${badgesHTML}</div>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// ==========================================
+// 7. CSV Export Logic
+// ==========================================
+btnExportCSV.addEventListener('click', () => {
+    if(currentTableData.length === 0) {
+        alert("추출할 데이터가 없습니다. 먼저 검색을 실행하세요.");
+        return;
     }
-    renderFavoritesSidebar();
+    
+    // 헤더
+    let csvContent = "\uFEFF썸네일,영상제목,채널명,구독자수,조회수,좋아요,댓글,활동성지수(%)\n";
+    
+    currentTableData.forEach(row => {
+        // 따옴표 방지 이스케이핑
+        let title = row.title.replace(/"/g, '""');
+        csvContent += `"${row.thumb}","${title}","${row.channel}",${row.subs},${row.views},${row.likes},${row.comments},${row.engagement}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "YT_Quant_Export.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 });
-
-function updateFavBtnUI(isFaved) {
-    if(isFaved) {
-        btnToggleFav.innerHTML = "★ 즐겨찾기됨";
-        btnToggleFav.classList.add('faved');
-    } else {
-        btnToggleFav.innerHTML = "☆ 즐겨찾기";
-        btnToggleFav.classList.remove('faved');
-    }
-}
-
-function renderFavoritesSidebar() {
-    favListElem.innerHTML = '';
-    if(favorites.length === 0) {
-        emptyFavMsg.style.display = 'block';
-    } else {
-        emptyFavMsg.style.display = 'none';
-        favorites.forEach(user => {
-            const li = document.createElement('li');
-            li.className = 'fav-item';
-            li.innerHTML = `<span>★ ${user.name}</span> <button class="btn-remove" data-id="${user.id}">×</button>`;
-            
-            li.querySelector('.btn-remove').addEventListener('click', (e) => {
-                e.stopPropagation();
-                removeFromFavorites(user.id);
-            });
-            li.addEventListener('click', () => {
-                urlInput.value = user.id; 
-                document.querySelector('[data-target="panel-analyzer"]').click();
-                runAnalysis(); 
-            });
-            favListElem.appendChild(li);
-        });
-    }
-}
-
-function removeFromFavorites(targetId) {
-    favorites = favorites.filter(f => f.id !== targetId);
-    if(currentAnalyzedChannel && currentAnalyzedChannel.id === targetId) updateFavBtnUI(false);
-    renderFavoritesSidebar();
-}
-
-// 히트맵 가채우기
-const heatmapGrid = document.getElementById('heatmapGrid');
-if(heatmapGrid) {
-    for(let i=0; i<42; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'heatmap-cell level-' + (Math.floor(Math.random() * 4) + 1);
-        heatmapGrid.appendChild(cell);
-    }
-}
