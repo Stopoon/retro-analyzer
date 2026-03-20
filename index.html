@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RetroTube Analyzer 98 - Enterprise Edition</title>
-    <!-- Windows 98 CSS Library -->
     <link rel="stylesheet" href="https://unpkg.com/98.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- 꽉 차는 단일 마스터 애플리케이션 창 -->
     <div class="window master-window" id="mainWindow">
         
         <!-- 타이틀 바 -->
@@ -33,18 +31,15 @@
             <input type="text" id="globalSearch" placeholder="어디서든 채널명, 종목(티커), 키워드로 강제 직행..." style="width: 40%; max-width: 500px; margin: 0 10px;">
             <button id="btnGlobalSearch">분석 즉시 시작</button>
             
-            <div style="flex-grow: 1;"></div> <!-- 우측 정렬용 빈 공간 -->
-            
+            <div style="flex-grow: 1;"></div>
             <button><img src="https://win98icons.alexmeub.com/icons/excel-0.png" alt="excel" style="width:16px; margin-right:3px;"> 데이터 CSV 추출</button>
         </div>
 
-        <!-- 메인 프레임 (사이드바 메뉴 + 데이터 뷰포트 분할) -->
         <div class="window-body main-frame">
             
-            <!-- 1. 좌측 트래킹 디렉토리 (Tree-View Navigation) -->
+            <!-- 1. 좌측 트래킹 디렉토리 -->
             <div class="sidebar sunken-panel">
                 <ul class="tree-view">
-                    <!-- 시스템 관제소 -->
                     <li>
                         <details open>
                             <summary><strong>🏠 시스템 홈 (Home)</strong></summary>
@@ -55,7 +50,6 @@
                         </details>
                     </li>
                     
-                    <!-- 핵심 3대 부문 특화 -->
                     <li>
                         <details open>
                             <summary><strong>🎯 VIP Tracker (집중 부문)</strong></summary>
@@ -67,7 +61,6 @@
                         </details>
                     </li>
 
-                    <!-- 엔터프라이즈 기능 집합 -->
                     <li>
                         <details>
                             <summary><strong>🚀 Creator Suite (성장/SEO)</strong></summary>
@@ -78,18 +71,16 @@
                         </details>
                     </li>
                     <li>
-                        <details>
+                        <details open>
                             <summary><strong>📈 벤치마킹 & 광고 수익</strong></summary>
                             <ul>
                                 <li class="nav-item" data-target="view-broad">10+ 글로벌 종합 랭킹 카테고리</li>
-                                <li class="nav-item" data-target="view-outlier">아웃라이어 영상 추적기</li>
                                 <li class="nav-item" data-target="view-ad">광고 단가(CPV) 예측 머신</li>
                                 <li class="nav-item" data-target="view-bot">🤖 가짜 구독자(Bot) 분별기</li>
                             </ul>
                         </details>
                     </li>
                     
-                    <!-- AI 여론 분석 -->
                     <li>
                         <details open>
                             <summary><strong>🧠 AI 감성 (여론 분석)</strong></summary>
@@ -102,7 +93,7 @@
                 </ul>
             </div>
 
-            <!-- 2. 우측 데이터 표시 창 (SPA 컨테이너) -->
+            <!-- 2. 우측 데이터 표시 창 -->
             <div class="viewport sunken-panel" id="mainViewport">
                 
                 <!-- 화면 1: Command Center (홈 화면) -->
@@ -151,10 +142,73 @@
                     </table>
                 </div>
 
-                <!-- 화면 3: 댓글 여론 온도계 -->
+                <!-- 화면 3: 미국 주식 랭킹 뷰 (새로 추가) -->
+                <div class="view-panel" id="view-us-stock">
+                    <h3>🇺🇸 US-Stock 벤치마킹 터미널</h3>
+                    <p>나스닥, S&P 500 등 해외 주식 시장의 흐름을 주도하는 유튜버 집중 감시망입니다.</p>
+                    <table class="interactive mt-10">
+                        <thead>
+                            <tr>
+                                <th>랭킹 ▲</th>
+                                <th>채널명</th>
+                                <th>언급 티커(Ticker)</th>
+                                <th>최근 30일 영상 평균조회수</th>
+                                <th>월 예상 광고수익</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>1</td><td>미주은</td><td>TSLA, NVDA</td><td>32만 회</td><td>₩4,500만</td></tr>
+                            <tr><td>2</td><td>소수몽키</td><td>QQQ, AAPL</td><td>25만 회</td><td>₩3,800만</td></tr>
+                            <tr><td>3</td><td>뉴욕주민</td><td>MSFT, SPY</td><td>18만 회</td><td>₩2,200만</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 화면 4: 부업/N잡 뷰 (새로 추가) -->
+                <div class="view-panel" id="view-side-hustle">
+                    <h3>💼 부업/N잡 수익화 채널 정밀 분석 및 사기 탐지</h3>
+                    <p>'월 천만 원', '무자본' 등 자극적인 키워드를 남발하는 채널들의 진짜 지표와 거품을 파헤칩니다.</p>
+                    <table class="interactive mt-10">
+                        <thead>
+                            <tr>
+                                <th>채널명</th>
+                                <th>주요 수익화 키워드</th>
+                                <th>광고 기만확률 (여론 기반)</th>
+                                <th>찐팬 참여율</th>
+                                <th>채널 건전도 평가</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>신사임당</td><td>스마트스토어, 강의</td><td>양호 (15%)</td><td>8.5%</td><td>S급 (탄탄함)</td></tr>
+                            <tr><td>자청</td><td>블로그, 창업, 마케팅</td><td style="color:red">주의 요망 (62%)</td><td>4.1%</td><td>C급 (경고)</td></tr>
+                            <tr><td>OOO무자본</td><td>해외구매대행, 자동화</td><td style="color:red; font-weight:bold;">매우 위험 (89%)</td><td>1.2%</td><td>F급 (어뷰징)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 화면 5: 마케팅 광고 단가 뷰 (새로 추가) -->
+                <div class="view-panel" id="view-ad">
+                    <h3>💵 스폰서십(PPL) 적정 단가 예측 머신</h3>
+                    <p>유튜버에게 유튜브 광고(브랜디드)를 맡길 때, 구독자 수 거품을 빼고 진짜 시청률 기준으로 호구 맞지 않는 적정 금액(CPV)을 계산합니다.</p>
+                    <div class="field-row mt-10">
+                        <label>협찬 유튜버 채널 URL: </label>
+                        <input type="text" placeholder="https://youtube.com/c/미주은" style="width: 50%;">
+                        <button>빅데이터 단가 계산</button>
+                    </div>
+                    <fieldset class="mt-10" style="padding: 15px;">
+                        <legend>단가 견적서 (예시)</legend>
+                        <ul class="tree-view">
+                            <li><strong>최근 30일 평균 뷰어:</strong> 254,000 명</li>
+                            <li><strong>적정 PPL 단가 범위:</strong> ₩5,000,000 ~ ₩7,500,000</li>
+                            <li><strong>광고 효율성 (ROI):</strong> 최상급 (동급 채널 대비 전환율 높음)</li>
+                        </ul>
+                    </fieldset>
+                </div>
+
+                <!-- 화면 6: 댓글 여론 온도계 -->
                 <div class="view-panel" id="view-sentiment">
-                    <h3>💬 영상 여론 자동 판독기 (진실 탐지용)</h3>
-                    <p>조회수가 높은 부업 영상의 숨겨진 '대댓글 반박', '좋아요 최다 비판 댓글'을 수집해 민심을 팩트체크합니다.</p>
+                    <h3>💬 AI 댓글 여론 자동 판독기 (진실 탐지용)</h3>
+                    <p>조회수가 높은 부업 영상의 숨겨진 '대댓글 반박', '비판 댓글'을 구글 API로 추출해 진짜 민심을 팩트체크합니다.</p>
                     <div class="field-row" style="margin: 15px 0;">
                         <label>영상 URL 입력: </label>
                         <input type="text" value="https://youtube.com/watch?v=scam_video" style="width:60%;">
@@ -164,27 +218,20 @@
                     <fieldset>
                         <legend>딥러닝 단어/감성 요약표</legend>
                         <ul class="tree-view">
-                        <li><strong>신뢰/우호 여론</strong>: 15% 
-                            <ul><li>"이런 방법이 있네요 감사합니다" (좋아요 2)</li></ul>
+                        <li><strong>신뢰/우호 여론</strong>: - % 
                         </li>
-                        <li><strong>반박/비판 여론</strong>: 85% 
-                            <ul>
-                                <li>"사기치지 마라, 이거 수수료 떼면 적자나는 방식임" (👍 1,420)</li>
-                                <li>"결국 이 사람 지 사이트 강의 팔아먹으려고 만든 영상..." (👍 955)</li>
-                            </ul>
+                        <li><strong>반박/비판 여론</strong>: - % 
                         </li>
                         <br>
-                        <li><strong>최종 신뢰도 판독 결과</strong>: <span style="color:red; font-weight:bold; font-size:14px;">🔴 위험 등급 (과장/허위광고 확률 95.2%)</span></li>
+                        <li><strong>최종 신뢰도 판독 결과</strong>: <span style="color:blue; font-size:13px;">API 쿼리 대기 중...</span></li>
                         </ul>
                     </fieldset>
                 </div>
-                
-                <!-- (여기에 나머지 뷰포트들도 전부 추가될 수 있는 아키텍처입니다) -->
 
             </div>
         </div>
         
-        <!-- 하단 상태 표시줄 (시스템 피드백 라인) -->
+        <!-- 하단 상태 표시줄 -->
         <div class="status-bar">
             <p class="status-bar-field">✅ 마스터 터미널 부팅 완료</p>
             <p class="status-bar-field" id="statusMsg" style="color: blue;">대기 중...</p>
