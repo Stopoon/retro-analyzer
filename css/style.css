@@ -1,0 +1,198 @@
+/* ==== Y-Analyzer 98 Master Terminal Stylesheet ==== */
+
+body {
+    background-color: #008080; /* 추억의 윈도우 95/98 메인 컬러 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'MS Sans Serif', 'Tahoma', '굴림', sans-serif;
+    overflow: hidden; /* 시스템 창 외부 스크롤 방지 */
+}
+
+/* 거대하고 압도적인 단일 마스터 터미널 앱 창 */
+.master-window {
+    width: 95%;
+    max-width: 1500px;
+    height: 92vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 타이틀 바 이미지 조정 */
+.title-bar-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+.title-bar-text img {
+    width: 16px;
+    height: 16px;
+}
+
+/* 💎 글로벌 옴니 탐색바 (툴바 영역) */
+.toolbar {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: #c0c0c0; /* 윈도우 회색 */
+    border-bottom: 2px solid #808080;
+    border-top: 1px solid #dfdfdf;
+    font-size: 13px;
+}
+
+/* 메인 뷰포트 골격 (좌 우 분할) */
+.main-frame {
+    flex-grow: 1;
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    background: #c0c0c0;
+    overflow: hidden; /* 내부에서만 스크롤 되도록 통제 */
+}
+
+/* 📍 좌측: 기능 트리 디렉토리 (LNB) */
+.sidebar {
+    width: 280px; /* 넓은 텍스트 수용 */
+    min-width: 280px;
+    background: white;
+    overflow-y: auto;
+    padding: 5px;
+}
+.sidebar .tree-view {
+    border: none;
+    box-shadow: none;
+    margin-top: 0;
+}
+.tree-view ul li {
+    margin-top: 4px;
+}
+
+/* 클릭 가능한 메뉴 텍스트 처리 */
+.nav-item {
+    cursor: pointer;
+    padding: 4px 6px;
+    margin-top: 2px;
+}
+.nav-item:hover {
+    background-color: transparent;
+    text-decoration: underline;
+    color: #0000ff;
+}
+/* 현재 사용중인 메뉴 포커스 */
+.nav-item.active {
+    background-color: #000080; /* 네이비 블록 */
+    color: white;
+}
+.nav-item.active:hover {
+    text-decoration: none;
+}
+
+/* 📍 우측: 데이터 시각화 뷰포트 (SPA Main Box) */
+.viewport {
+    flex-grow: 1;
+    background: #f0f0f0; /* 회색 모니터 느낌 */
+    padding: 20px 25px;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* 패널(탭) 전환 애니메이션 로직 */
+.view-panel {
+    display: none; /* 평소엔 모두 숨김 */
+}
+/* 자바스크립트에 의해 액티브 클래스가 붙은 한 놈만 출력됨 */
+.view-panel.active {
+    display: block;
+    animation: fadeIn 0.15s ease-in; /* 즉각적인 반응을 위해 매우 짧은 애니메이션 */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 🗄️ 데이터 테이블 98.css 스타일 하드커스텀 */
+.interactive {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+.interactive th, .interactive td {
+    border: 1px solid #808080;
+    padding: 6px 10px;
+    text-align: left;
+    font-size: 13px;
+}
+.interactive th {
+    background: #dfdfdf;
+    border-top: 1px solid white;
+    border-left: 1px solid white;
+    font-weight: bold;
+    cursor: pointer; /* 정렬 기능 암시 */
+}
+.interactive th:active {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+}
+.interactive tbody tr:hover {
+    background-color: #000080; /* 호버 시 네이비 전환 */
+    color: white;
+}
+
+.mt-10 { margin-top: 10px; }
+
+/* =========================================
+   모바일 최적화 (Responsive Media Queries) 
+   ========================================= */
+@media (max-width: 768px) {
+    /* 모바일에서는 여백 없이 강제로 화면 전체 채우기 */
+    body { padding: 0; background: #c0c0c0; }
+    
+    .master-window {
+        width: 100%;
+        height: 100vh;
+        max-width: none;
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    /* 툴바 검색창 세로로 쌓기 */
+    .toolbar {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    #globalSearch {
+        width: 100% !important;
+        margin: 5px 0 !important;
+    }
+    
+    /* 모바일 햄버거 토글 버튼 활성화 */
+    #mobileMenuBtn {
+        display: inline-block !important;
+    }
+
+    /* 사이드바는 모바일에서 숨겨뒀다가 오버레이(Drawer) 형태로 출력 */
+    .main-frame {
+        position: relative; /* 자식 absolute 기준 */
+    }
+    .sidebar {
+        position: absolute;
+        top: 0;
+        left: -300px; /* 화면 밖으로 빼놓기 */
+        height: 100%;
+        z-index: 1000;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    }
+    .sidebar.open {
+        left: 0; /* 버튼 클릭시 튀어나옴 */
+    }
+
+    /* 뷰포트 패딩 최소화 */
+    .viewport {
+        padding: 10px;
+    }
+}
