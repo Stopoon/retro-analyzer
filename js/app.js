@@ -110,29 +110,51 @@ async function runAnalysis() {
 
     try {
         statusMsg.style.color = 'blue';
-        statusMsg.textContent = "🔍 유튜브 딥 서치 (채널 검색 및 스탯 추출 중)... [|||||]";
-
-        // [핵심 업그레이드] 1. 사용자가 대충 '슈카월드'라고 한국어로 쳐도 구글에서 해당 채널의 고유 ID를 정확히 찾아옵니다.
-        const searchFindRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(val)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`);
-        const searchFindData = await searchFindRes.json();
+        statusMsg.textContent = "🔍 유튜브 채널 딥 서치 중... [|||||]";
         
-        // 구글 API 한도 초과 등 진짜 에러가 난 경우 캐치
-        if(searchFindData.error) throw new Error(searchFindData.error.message);
+        let channel = null;
 
-        if(!searchFindData.items || searchFindData.items.length === 0) {
-            alert("❌ 채널을 찾을 수 없습니다. 검색어를 약간 수정해 보세요.");
-            btnAnalyze.innerText = "분석하기";
-            btnAnalyze.disabled = false;
-            return;
+        // [핵심 에러 패치] 1. 입력값이 전체 URL 주소이거나 '@'로 시작할 경우, 핸들을 자동 추출하여 초정밀 직접 조회합니다.
+        let handle = "";
+        if (val.includes('youtube.com/') || val.includes('youtu.be/')) {
+            const parts = val.split('/');
+            handle = parts[parts.length-1];
+            if(!handle.startsWith('@')) handle = '@' + handle;
+        } else if (val.startsWith('@')) {
+            handle = val;
         }
 
-        const chId = searchFindData.items[0].id.channelId;
+        // 핸들이 추출되었다면 1차 다이렉트 조회 시도
+        if (handle) {
+            const handleRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle.replace('@','')}&key=${YOUTUBE_API_KEY}`);
+            const handleData = await handleRes.json();
+            if(handleData.error && handleData.error.code === 403) throw new Error("구글 API 일일 사용량(한도) 10,000건 초과 또는 접근 거부");
+            if(handleData.items && handleData.items.length > 0) {
+                channel = handleData.items[0];
+            }
+        }
 
-        // [핵심 업그레이드] 2. 찾아낸 고유 ID를 바탕으로 완벽하게 구독자, 조회수 등 통계를 100% 긁어옵니다.
-        const statRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${chId}&key=${YOUTUBE_API_KEY}`);
-        const statData = await statRes.json();
-        const channel = statData.items[0];
+        // [복합 업그레이드] 2. 주소가 아니었거나(일반 한국어), URL 핸들로 못 찾았다면 2차로 유튜브 전체 검색(Search) 엔진을 가동합니다.
+        if (!channel) {
+            const searchFindRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet,q=${encodeURIComponent(val)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`);
+            const searchFindData = await searchFindRes.json();
+            
+            // 한도 초과 등 진짜 에러 
+            if(searchFindData.error) throw new Error(searchFindData.error.message);
+            // 아예 데이터가 없으면 검색 실패
+            if(!searchFindData.items || searchFindData.items.length === 0) {
+                throw new Error(`'${val}' 에 해당하는 유튜브 채널을 찾을 수 없습니다.`);
+            }
 
+            const chId = searchFindData.items[0].id.channelId;
+            const statRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${chId}&key=${YOUTUBE_API_KEY}`);
+            const statData = await statRes.json();
+            
+            if(statData.error) throw new Error(statData.error.message);
+            channel = statData.items[0];
+        }
+
+        const chId = channel.id;
         const subs = parseInt(channel.statistics.subscriberCount || 0);
         const views = parseInt(channel.statistics.viewCount || 0);
         const videosCount = parseInt(channel.statistics.videoCount || 0);
@@ -209,7 +231,7 @@ async function runAnalysis() {
 
     } catch(err) {
         console.error(err);
-        alert("분석 중 오류가 발생했습니다. (일일 처리 한도 초과 또는 잘못된 핸들명)");
+        alert("❌ 분석 중 오류(또는 구글 API 거부)가 발생했습니다.\n\n[상세 원인]: " + err.message);
         btnAnalyze.innerText = "분석하기";
         btnAnalyze.disabled = false;
         statusMsg.style.color = 'red';
