@@ -1,6 +1,6 @@
 // ==== Modern YT Analyzer JS Logic (Real API v3 Connection) ====
 // 🚨 고객님이 발급받으신 진짜 구글 유튜브 API 키를 아래 큰따옴표 안에 붙여넣어 주세요!
-const YOUTUBE_API_KEY = "여기에_발급받은_API_키를_넣으세요";
+const YOUTUBE_API_KEY = "AIzaSyAN41DA24oIosCltopVPRvnczVLfPuHsFs";
 
 const menuItems = document.querySelectorAll('.main-menu .menu-item:not(.disabled)');
 const contentPanels = document.querySelectorAll('.content-panel');
@@ -108,31 +108,31 @@ async function runAnalysis() {
     btnAnalyze.innerText = "데이터 추출 중...";
     btnAnalyze.disabled = true;
 
-    // 유튜브 핸들 정규화 (예: https://youtube.com/@syuka -> @syuka)
-    let handle = val;
-    if(val.includes('youtube.com/') || val.includes('youtu.be/')) {
-        const parts = val.split('/');
-        handle = parts[parts.length-1];
-    }
-    if(!handle.startsWith('@')) handle = '@' + handle;
-
     try {
         statusMsg.style.color = 'blue';
-        statusMsg.textContent = "🔍 유튜브 딥 서치 (구독자 및 영상 추출 중)... [|||||]";
+        statusMsg.textContent = "🔍 유튜브 딥 서치 (채널 검색 및 스탯 추출 중)... [|||||]";
 
-        // [핵심 API 1] 채널 고유 정보 및 모든 마스터 통계 가져오기
-        const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forHandle=${handle.replace('@','')}&key=${YOUTUBE_API_KEY}`);
-        const searchData = await searchRes.json();
+        // [핵심 업그레이드] 1. 사용자가 대충 '슈카월드'라고 한국어로 쳐도 구글에서 해당 채널의 고유 ID를 정확히 찾아옵니다.
+        const searchFindRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(val)}&type=channel&maxResults=1&key=${YOUTUBE_API_KEY}`);
+        const searchFindData = await searchFindRes.json();
         
-        if(!searchData.items || searchData.items.length === 0) {
-            alert("채널을 찾을 수 없습니다. (핸들명 @OOO 형식으로 입력해주세요)");
+        // 구글 API 한도 초과 등 진짜 에러가 난 경우 캐치
+        if(searchFindData.error) throw new Error(searchFindData.error.message);
+
+        if(!searchFindData.items || searchFindData.items.length === 0) {
+            alert("❌ 채널을 찾을 수 없습니다. 검색어를 약간 수정해 보세요.");
             btnAnalyze.innerText = "분석하기";
             btnAnalyze.disabled = false;
             return;
         }
 
-        const channel = searchData.items[0];
-        const chId = channel.id;
+        const chId = searchFindData.items[0].id.channelId;
+
+        // [핵심 업그레이드] 2. 찾아낸 고유 ID를 바탕으로 완벽하게 구독자, 조회수 등 통계를 100% 긁어옵니다.
+        const statRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${chId}&key=${YOUTUBE_API_KEY}`);
+        const statData = await statRes.json();
+        const channel = statData.items[0];
+
         const subs = parseInt(channel.statistics.subscriberCount || 0);
         const views = parseInt(channel.statistics.viewCount || 0);
         const videosCount = parseInt(channel.statistics.videoCount || 0);
@@ -146,7 +146,7 @@ async function runAnalysis() {
 
         // 👨‍💼 [DOM 갱신 1] 진짜 채널 아바타 및 헤더 정보
         document.getElementById('resName').innerText = channel.snippet.title;
-        document.getElementById('resHandle').innerHTML = `${channel.snippet.customUrl || handle} · <span class="cat-tag">크리에이터</span>`;
+        document.getElementById('resHandle').innerHTML = `${channel.snippet.customUrl || val} · <span class="cat-tag">크리에이터</span>`;
         document.getElementById('resAvatar').innerHTML = `<img src="${channel.snippet.thumbnails.default.url}" style="width:100%; border-radius:50%;">`;
         document.getElementById('resAvatar').style.background = 'transparent';
 
@@ -200,7 +200,7 @@ async function runAnalysis() {
         `;
 
         // 즐겨찾기 상태 갱신
-        currentAnalyzedChannel = { id: handle, name: channel.snippet.title };
+        currentAnalyzedChannel = { id: channel.snippet.customUrl || val, name: channel.snippet.title };
         updateFavBtnUI(favorites.some(f => f.id === currentAnalyzedChannel.id));
 
         statusMsg.textContent = "✅ 분석 완전 성공 (데이터 100% 실제 유튜브 동기화 완료)";
